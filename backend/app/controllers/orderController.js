@@ -11,6 +11,11 @@ const createOrder = async (req, res) => {
     }
 
     try {
+        const existingOrder = await Order.findOne({ employee: req.user._id });
+        if (existingOrder) {
+            return res.status(400).json({ message: 'You have already placed an order.' });
+        }
+
         const order = new Order({
             employee: req.user._id,
             selections,

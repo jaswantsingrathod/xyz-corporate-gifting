@@ -27,14 +27,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/welcome-kit"
-              element={
-                <ProtectedRoute allowedRoles={['employee']}>
-                  <WelcomeKit />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/welcome-kit" element={<WelcomeKit />} />
             <Route
               path="/admin"
               element={

@@ -10,6 +10,13 @@ const statusColors = {
     Delivered: 'bg-green-100 text-green-800',
 };
 
+const statusLabels = {
+    Pending: 'Order Placed',
+    Preparing: 'Order is Preparing',
+    Ready: 'Order Ready to Pick Up from Company',
+    Delivered: 'Order Delivered',
+};
+
 const Orders = () => {
     const dispatch = useDispatch();
     const { orders, loading, error } = useSelector((state) => state.orders);
@@ -49,7 +56,7 @@ const Orders = () => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                     {['Pending', 'Preparing', 'Ready', 'Delivered'].map(s => (
                         <div key={s} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{s}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{statusLabels[s] || s}</p>
                             <p className={`text-3xl font-black text-[#1E293B]`}>
                                 {orders.filter(o => o.status === s).length}
                             </p>
@@ -105,7 +112,7 @@ const Orders = () => {
                                             </td>
                                             <td className="px-6 py-5 border-l border-slate-100/50">
                                                 <span className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full border shadow-sm ${statusColors[order.status] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
-                                                    {order.status}
+                                                    {statusLabels[order.status] || order.status}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5 border-l border-slate-100/50">
@@ -115,7 +122,7 @@ const Orders = () => {
                                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/10 focus:border-[#2563EB] appearance-none cursor-pointer"
                                                 >
                                                     {['Pending', 'Preparing', 'Ready', 'Delivered'].map(s => (
-                                                        <option key={s} value={s}>{s}</option>
+                                                        <option key={s} value={s}>{statusLabels[s] || s}</option>
                                                     ))}
                                                 </select>
                                             </td>

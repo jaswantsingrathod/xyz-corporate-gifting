@@ -11,6 +11,13 @@ const statusColors = {
     Delivered: 'bg-green-100 text-green-700',
 };
 
+const statusLabels = {
+    Pending: 'Order Placed',
+    Preparing: 'Order is Preparing',
+    Ready: 'Order Ready to Pick Up from Company',
+    Delivered: 'Order Delivered',
+};
+
 const EmployeeDashboard = () => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
@@ -137,7 +144,7 @@ const EmployeeDashboard = () => {
 
                                     <div className="lg:text-right flex items-center lg:items-end justify-between lg:flex-col gap-2">
                                         <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${statusColors[order.status] || 'bg-slate-100 text-slate-700'}`}>
-                                            {order.status}
+                                            {statusLabels[order.status] || order.status}
                                         </span>
                                         <span className="text-[10px] text-slate-300 font-bold tracking-widest uppercase">Verified Order</span>
                                     </div>

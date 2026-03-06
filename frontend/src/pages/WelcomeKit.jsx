@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { fetchItems } from '../redux/itemSlice';
-import { createOrder } from '../redux/orderSlice';
+import { createOrder, fetchMyOrders } from '../redux/orderSlice';
 
 const WelcomeKit = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { items, loading: itemsLoading } = useSelector((state) => state.items);
-    const { loading: orderLoading, error: orderError } = useSelector((state) => state.orders);
+    const { token } = useSelector((state) => state.auth);
+    const { myOrders, loading: orderLoading, error: orderError } = useSelector((state) => state.orders);
 
     // selections: { [category]: selectedOptionName }
     const [selections, setSelections] = useState({});
@@ -17,9 +18,15 @@ const WelcomeKit = () => {
 
     useEffect(() => {
         dispatch(fetchItems());
-    }, [dispatch]);
+        if (token) {
+            dispatch(fetchMyOrders());
+        }
+    }, [dispatch, token]);
+
+    const hasExistingOrder = myOrders && myOrders.length > 0;
 
     const handleSelectOption = (category, optionName) => {
+        if (hasExistingOrder) return;
         setSelections(prev => {
             if (prev[category] === optionName) {
                 const updated = { ...prev };
@@ -31,6 +38,16 @@ const WelcomeKit = () => {
     };
 
     const handleSubmitOrder = async () => {
+        if (!token) {
+            navigate('/login', { state: { from: '/welcome-kit' } });
+            return;
+        }
+
+        if (hasExistingOrder) {
+            setSubmitError('You have already placed an order.');
+            return;
+        }
+
         setSubmitError('');
         const selectionArray = Object.entries(selections).map(([category, option]) => ({
             category,
@@ -55,10 +72,10 @@ const WelcomeKit = () => {
     const totalSelected = Object.keys(selections).length;
 
     return (
-        <div className="max-w-7xl mx-auto px-6 py-12">
-            <div className="mb-12">
-                <h1 className="text-4xl font-extrabold text-[#1E293B] tracking-tight mb-2">Build Your Kit</h1>
-                <p className="text-slate-500 font-medium italic">Curate your perfect corporate collection. Choose one from each available category.</p>
+        <div className="max-w-6xl mx-auto px-6 py-12">
+            <div className="mb-8">
+                <h1 className="text-3xl font-extrabold text-[#1E293B] tracking-tight mb-1">Select Your Kit</h1>
+                <p className="text-slate-500 text-sm font-medium">Choose one item from each category below to complete your welcome package.</p>
             </div>
 
             {orderSuccess && (
@@ -75,36 +92,47 @@ const WelcomeKit = () => {
                 </div>
             )}
 
-            {itemsLoading ? (
+            {orderLoading || itemsLoading ? (
                 <div className="py-32 flex flex-col items-center justify-center text-slate-300">
                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600 mb-6"></div>
                     <p className="font-bold tracking-widest uppercase text-xs">Loading Catalog...</p>
+                </div>
+            ) : hasExistingOrder ? (
+                <div className="py-24 flex flex-col items-center justify-center text-center bg-white rounded-[2rem] border border-slate-100 shadow-xl max-w-2xl mx-auto">
+                    <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center text-3xl mb-8 shadow-inner">📦</div>
+                    <h2 className="text-2xl font-bold text-[#1E293B] mb-4">Selection Already Submitted</h2>
+                    <p className="text-slate-500 font-medium mb-10 max-w-md">
+                        You've already curated your welcome kit. Each employee is eligible for one set of corporate gifts.
+                    </p>
+                    <Link to="/employee" className="btn-primary px-10 py-3 rounded-full font-bold">
+                        Track My Order
+                    </Link>
                 </div>
             ) : items.length === 0 ? (
                 <div className="py-32 text-center bg-white rounded-[2rem] border border-slate-100 shadow-sm">
                     <p className="text-slate-400 font-bold">The catalog is currently empty.</p>
                 </div>
             ) : (
-                <div className="space-y-24 pb-40">
+                <div className="space-y-12 pb-32">
                     {items.map(item => (
                         <div key={item._id} className="relative">
-                            <div className="flex items-center gap-6 mb-10">
-                                <h2 className="text-2xl font-black text-[#1E293B] capitalize tracking-tight">{item.category}</h2>
-                                <div className="h-[2px] flex-grow bg-slate-100"></div>
+                            <div className="flex items-center gap-4 mb-6">
+                                <h2 className="text-xl font-bold text-[#1E293B] capitalize tracking-tight">{item.category}</h2>
+                                <div className="h-px flex-grow bg-slate-100"></div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                 {item.options?.map(opt => {
                                     const isSelected = selections[item.category] === opt.name;
                                     return (
                                         <div
                                             key={opt._id}
                                             onClick={() => handleSelectOption(item.category, opt.name)}
-                                            className={`card-corporate group cursor-pointer !p-0 overflow-hidden relative ${isSelected ? 'ring-4 ring-[#2563EB]/10 border-[#2563EB] shadow-xl' : ''
+                                            className={`card-corporate group cursor-pointer !p-0 overflow-hidden relative border-slate-200 ${isSelected ? 'ring-2 ring-blue-500 border-blue-500 shadow-lg' : 'hover:border-slate-300'
                                                 }`}
                                         >
                                             {/* Image container */}
-                                            <div className="aspect-[4/3] bg-slate-50 relative overflow-hidden">
+                                            <div className="aspect-video bg-slate-50 relative overflow-hidden">
                                                 {opt.image ? (
                                                     <img
                                                         src={opt.image}
@@ -132,19 +160,19 @@ const WelcomeKit = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="p-6 pb-8">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <h3 className="font-bold text-[#1E293B] text-lg leading-tight group-hover:text-[#2563EB] transition-colors">{opt.name}</h3>
+                                            <div className="p-4">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <h3 className="font-bold text-[#1E293B] text-sm leading-tight group-hover:text-[#2563EB] transition-colors">{opt.name}</h3>
                                                 </div>
                                                 {opt.brand && (
-                                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 mb-3 inline-block">{opt.brand}</span>
+                                                    <span className="text-[8px] font-bold uppercase tracking-wider text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 mb-2 inline-block">{opt.brand}</span>
                                                 )}
                                                 {opt.description && (
-                                                    <p className="text-sm text-slate-400 font-medium leading-relaxed">{opt.description}</p>
+                                                    <p className="text-[11px] text-slate-400 font-medium leading-tight line-clamp-2">{opt.description}</p>
                                                 )}
                                             </div>
 
-                                            <div className={`absolute bottom-0 left-0 h-1 bg-[#2563EB] transition-all duration-500 ${isSelected ? 'w-full' : 'w-0'}`}></div>
+                                            <div className={`absolute bottom-0 left-0 h-0.5 bg-[#2563EB] transition-all duration-500 ${isSelected ? 'w-full' : 'w-0'}`}></div>
                                         </div>
                                     );
                                 })}
@@ -153,13 +181,13 @@ const WelcomeKit = () => {
                     ))}
 
                     {/* Footer Floating Action Bar - Ultra Minimal Pill */}
-                    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
-                        <div className="bg-[#1E293B]/95 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-full p-2 flex items-center gap-6 pl-8 pr-2">
+                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+                        <div className="bg-[#1E293B]/95 backdrop-blur-xl border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.3)] rounded-full p-1.5 flex items-center gap-5 pl-6 pr-1.5">
                             <div className="flex flex-col">
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 leading-none mb-1">Configuration</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 leading-none mb-0.5">Selection</span>
                                 <div className="flex items-baseline gap-1 relative">
-                                    <span className={`text-lg font-black tracking-tighter ${totalSelected === items.length ? 'text-blue-400' : 'text-white'}`}>{totalSelected}</span>
-                                    <span className="text-[10px] font-bold text-slate-600">/ {items.length} chosen</span>
+                                    <span className={`text-base font-black tracking-tighter ${totalSelected === items.length ? 'text-blue-400' : 'text-white'}`}>{totalSelected}</span>
+                                    <span className="text-[9px] font-bold text-slate-600">/ {items.length} chosen</span>
                                 </div>
                             </div>
 
@@ -168,8 +196,8 @@ const WelcomeKit = () => {
                             <button
                                 onClick={handleSubmitOrder}
                                 disabled={totalSelected === 0 || orderLoading}
-                                className={`h-12 px-8 rounded-full font-black text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 ${totalSelected === items.length && !orderLoading
-                                    ? 'bg-[#2563EB] text-white hover:bg-blue-600 shadow-xl'
+                                className={`h-10 px-6 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-2 ${totalSelected === items.length && !orderLoading
+                                    ? 'bg-[#2563EB] text-white hover:bg-blue-600 shadow-lg'
                                     : 'bg-white/5 text-slate-600 cursor-not-allowed border border-white/5'
                                     }`}
                             >

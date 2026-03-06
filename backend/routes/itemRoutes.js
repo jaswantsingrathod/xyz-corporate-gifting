@@ -9,8 +9,8 @@ import {
 } from '../app/controllers/itemController.js';
 import { protect, admin } from '../app/middleware/authMiddleware.js';
 
-// Get all items (any authenticated user)
-router.get('/getitems', protect, getItems);
+// Get all items (public access for viewing kits)
+router.get('/getitems', getItems);
 
 // Create item category (admin only)
 router.post('/createitem', protect, admin, createItem);
