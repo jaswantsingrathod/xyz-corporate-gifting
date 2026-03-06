@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { loginUser } from '../redux/authSlice';
+import { toast } from 'react-toastify';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -12,16 +13,47 @@ const Login = () => {
     const successMessage = location.state?.message || '';
     const { loading, error } = useSelector((state) => state.auth);
 
+    useEffect(() => {
+        if (successMessage) {
+            toast.success(successMessage);
+        }
+    }, [successMessage]);
+
+    const validateEmail = (email) => {
+        return String(email)
+            .toLowerCase()
+            .match(
+                /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+            );
+    };
+
     const handleLogin = async (e) => {
         e.preventDefault();
+
+        if (!email) {
+            toast.error('Please enter your email address');
+            return;
+        }
+        if (!validateEmail(email)) {
+            toast.error('Please enter a valid email address');
+            return;
+        }
+        if (!password) {
+            toast.error('Please enter your password');
+            return;
+        }
+
         const result = await dispatch(loginUser({ email, password }));
         if (loginUser.fulfilled.match(result)) {
+            toast.success('Logged in successfully!');
             const user = result.payload.user;
             if (user.role === 'admin') {
                 navigate('/admin');
             } else {
                 navigate('/employee');
             }
+        } else if (loginUser.rejected.match(result)) {
+            toast.error(result.payload || 'Login failed');
         }
     };
 
@@ -40,11 +72,6 @@ const Login = () => {
                         </p>
                     </div>
 
-                    {successMessage && (
-                        <div className="mb-6 bg-green-50 border border-green-100 text-green-700 text-sm font-bold text-center px-4 py-3 rounded-xl flex items-center justify-center gap-2">
-                            <span>✅</span> {successMessage}
-                        </div>
-                    )}
 
                     <form className="space-y-5" onSubmit={handleLogin}>
                         <div className="space-y-4">
@@ -52,7 +79,6 @@ const Login = () => {
                                 <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2 pl-1">Email Address</label>
                                 <input
                                     type="email"
-                                    required
                                     className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 text-[#1E293B] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all font-medium placeholder-slate-400"
                                     placeholder="name@gmail.com"
                                     value={email}
@@ -63,7 +89,6 @@ const Login = () => {
                                 <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2 pl-1">Password</label>
                                 <input
                                     type="password"
-                                    required
                                     className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 text-[#1E293B] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all font-medium placeholder-slate-400"
                                     placeholder="••••••••"
                                     value={password}
@@ -72,11 +97,6 @@ const Login = () => {
                             </div>
                         </div>
 
-                        {error && (
-                            <div className="bg-red-50 border border-red-100 text-red-600 text-xs font-bold text-center py-3 rounded-xl">
-                                {error}
-                            </div>
-                        )}
 
                         <button
                             type="submit"

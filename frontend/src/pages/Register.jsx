@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { registerUser } from '../redux/authSlice';
+import { toast } from 'react-toastify';
 
 const Register = () => {
     const [form, setForm] = useState({ employeeName: '', email: '', password: '', confirmPassword: '' });
@@ -14,12 +15,36 @@ const Register = () => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
+    const validateEmail = (email) => {
+        return String(email)
+            .toLowerCase()
+            .match(
+                /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+            );
+    };
+
     const handleRegister = async (e) => {
         e.preventDefault();
         setFormError('');
 
+        if (!form.employeeName) {
+            toast.error('Please enter your full name');
+            return;
+        }
+        if (!form.email) {
+            toast.error('Please enter your email address');
+            return;
+        }
+        if (!validateEmail(form.email)) {
+            toast.error('Please enter a valid email address');
+            return;
+        }
+        if (form.password.length < 6) {
+            toast.error('Password must be at least 6 characters long');
+            return;
+        }
         if (form.password !== form.confirmPassword) {
-            setFormError('Passwords do not match.');
+            toast.error('Passwords do not match');
             return;
         }
 
@@ -30,7 +55,10 @@ const Register = () => {
         }));
 
         if (registerUser.fulfilled.match(result)) {
-            navigate('/login', { state: { message: 'Account created! Please sign in.' } });
+            toast.success('Registration successful! Please login.');
+            navigate('/login');
+        } else if (registerUser.rejected.match(result)) {
+            toast.error(result.payload || 'Registration failed');
         }
     };
 
@@ -56,7 +84,6 @@ const Register = () => {
                                 <input
                                     type="text"
                                     name="employeeName"
-                                    required
                                     className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 text-[#1E293B] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all font-medium placeholder-slate-400"
                                     placeholder="John Doe"
                                     value={form.employeeName}
@@ -68,7 +95,6 @@ const Register = () => {
                                 <input
                                     type="email"
                                     name="email"
-                                    required
                                     className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 text-[#1E293B] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all font-medium placeholder-slate-400"
                                     placeholder="name@gmail.com"
                                     value={form.email}
@@ -81,8 +107,6 @@ const Register = () => {
                                     <input
                                         type="password"
                                         name="password"
-                                        required
-                                        minLength={6}
                                         className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 text-[#1E293B] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all font-medium placeholder-slate-400"
                                         placeholder="········"
                                         value={form.password}
@@ -94,7 +118,6 @@ const Register = () => {
                                     <input
                                         type="password"
                                         name="confirmPassword"
-                                        required
                                         className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 text-[#1E293B] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all font-medium placeholder-slate-400"
                                         placeholder="········"
                                         value={form.confirmPassword}
@@ -104,11 +127,6 @@ const Register = () => {
                             </div>
                         </div>
 
-                        {(formError || error) && (
-                            <div className="bg-red-50 border border-red-100 text-red-600 text-xs font-bold text-center py-3 rounded-xl">
-                                {formError || error}
-                            </div>
-                        )}
 
                         <button
                             type="submit"
